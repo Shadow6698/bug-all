@@ -1,0 +1,101 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Remote = ReplicatedStorage:FindFirstChild("RE") and ReplicatedStorage.RE:FindFirstChild("1Gu1n") -- checa com segurança
+
+local bugAtivo = false
+local index = 1
+local connection = nil
+
+local function ativarBug()
+    if not Remote then
+        warn("Remote não encontrado. Abortando.")
+        return
+    end
+    if bugAtivo then
+        print("Bug já está ativo.")
+        return
+    end
+
+    bugAtivo = true
+    index = 1
+    connection = RunService.Stepped:Connect(function()
+        if not bugAtivo then return end -- extra safety
+
+        local allPlayers = Players:GetPlayers()
+        if #allPlayers < 2 then return end
+
+        index = index + 1
+        if index > #allPlayers then index = 1 end
+
+        local target = allPlayers[index]
+        if not target or target == LocalPlayer then
+            index = index + 1
+            if index > #allPlayers then index = 1 end
+            target = allPlayers[index]
+        end
+
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local crazyVector = Vector3.new(
+                math.random(1e14, 1e15),
+                math.random(1e14, 1e15),
+                math.random(1e14, 1e15)
+            )
+
+            local args = {
+                [1] = target.Character.HumanoidRootPart,
+                [2] = target.Character.HumanoidRootPart,
+                [3] = crazyVector,
+                [4] = target.Character.HumanoidRootPart.Position,
+                [5] = LocalPlayer.Backpack:FindFirstChild("Assault") and LocalPlayer.Backpack.Assault:FindFirstChild("GunScript_Local") and LocalPlayer.Backpack.Assault.GunScript_Local:FindFirstChild("MuzzleEffect"),
+                [6] = LocalPlayer.Backpack:FindFirstChild("Assault") and LocalPlayer.Backpack.Assault:FindFirstChild("GunScript_Local") and LocalPlayer.Backpack.Assault.GunScript_Local:FindFirstChild("HitEffect"),
+                [7] = 0,
+                [8] = 0,
+                [9] = { [1] = false },
+                [10] = {
+                    [1] = 25,
+                    [2] = Vector3.new(100, 100, 100),
+                    [3] = BrickColor.new(29),
+                    [4] = 0.25,
+                    [5] = Enum.Material.SmoothPlastic,
+                    [6] = 0.25
+                },
+                [11] = true,
+                [12] = false
+            }
+            Remote:FireServer(unpack(args))
+        end
+    end)
+
+    print("💥 /bug all ativado.")
+end
+
+local function desativarBug()
+    if not bugAtivo then
+        print("Bug já está desativado.")
+        return
+    end
+
+    bugAtivo = false
+    if connection then
+        connection:Disconnect()
+        connection = nil
+    end
+    index = 1
+    print("✅ /remove bug — bug desativado.")
+end
+
+LocalPlayer.Chatted:Connect(function(msg)
+    local m = msg:lower():gsub("^%s*(.-)%s*$", "%1") -- trim e lower
+    if m == "/bug all" then
+        ativarBug()
+    elseif m == "/remove bug" then
+        desativarBug()
+    end
+end)
+
+-- limpa se o jogador fechar o jogo
+Players.LocalPlayer.AncestryChanged:Connect(function()
+    desativarBug()
+end)
